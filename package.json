@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@material-ui/core": "^4.9.11",
+    "@rails/webpacker": "^5.1.1",
+    "bootstrap": "^4.4.1",
+    "classnames": "^2.2.6",
+    "core-js": "^2.5.7",
+    "jquery": "^3.3.1",
+    "js-cookie": "^2.2.1",
+    "react": "^16.13.1",
+    "react-beautiful-dnd": "^13.0.0",
+    "react-dom": "^16.13.1",
+    "react-scripts": "3.4.1",
+    "react-sound": "^1.2.0",
+    "reactstrap": "^8.4.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^9.7.6",
+    "cssnano": "^4.1.10",
+    "postcss-cssnext": "^3.1.0",
+    "postcss-import": "^12.0.1",
+    "postcss-loader": "^3.0.0",
+    "sugarss": "^2.0.0",
+    "webpack-dev-server": "^3.10.3"
+  }
+}

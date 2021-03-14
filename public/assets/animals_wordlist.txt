@@ -1,0 +1,6 @@
+cow
+bat
+ox
+pig
+deer
+fish
