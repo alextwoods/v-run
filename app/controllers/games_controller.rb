@@ -44,6 +44,16 @@ class GamesController < ApplicationController
     render json: @game
   end
 
+  # Add a CPU player to the game
+  def cpu
+    # TODO
+  end
+
+  # Updates a players team
+  def player_team
+
+  end
+
   # update settings
   def settings
     puts "Got Params: #{params}"

@@ -13,6 +13,7 @@ group :development, :test do
   gem 'rack'
   gem 'puma'
   gem 'rubocop'
+  # gem 'benchmark-ips'
 end
 
 group :test do

@@ -1,7 +1,12 @@
 require 'set'
 
 class Game < ApplicationItem
+  table_name :chaingame
   column :id, :data, :updated_at
+  #   nplayers  2  3  4  5  6  7  8  9  10 11 12
+  HAND_CARDS = [7, 6, 6, 6, 5, 5, 4, 4, 3, 3, 3]
+
+  CPU_NAMES = %w[bender data chip hal marvin boilerplate cloud]
 
   def add_player(player)
     validate_data
@@ -14,6 +19,29 @@ class Game < ApplicationItem
     end
 
     data['players'] << player
+    # assign a team to the player - pick the shortest
+    green_len = data['teams']['green']['players'].size
+    blue_len = data['teams']['blue']['players'].size
+    if blue_len < green_len
+      set_player_team(player, 'blue')
+    else
+      set_player_team(player, 'green')
+    end
+  end
+
+  def add_cpu()
+    name = (CPU_NAMES - players).sample
+    add_player(name)
+    data["cpu_players"] << name
+  end
+
+  def set_player_team(player, team)
+    # check if the player is in a team already, if so remove them first
+    if (previous_team = player_team[player])
+      data["teams"][previous_team]["players"] = data["teams"][previous_team]["players"].filter { |p| p != player }
+    end
+    player_team[player] = team
+    data["teams"][team]["players"] << player
   end
 
   def update_settings(settings)
@@ -30,11 +58,26 @@ class Game < ApplicationItem
       raise "Unable to start game in state: #{data['state']}"
     end
 
-    data['state'] = 'PLAYING'
-    data['deck'] = Deck.standard_deck
-    data['score'] = players.map { |p| [p, 0] }.to_h
-    table_state['dealer'] = players.first
-    start_round(data['round'])
+    data['state'] = 'WAITING_TO_PLAY'
+    data['table_state'] = {}
+
+    table_state['n_hand_cards'] = settings['custom_hand_cards'].blank?  ? HAND_CARDS[[0, players.size-2].max] : settings['custom_hand_cards']
+    table_state['deck'] = deck = (0...Deck.size).to_a.shuffle
+
+    table_state['hands'] = hands = {}
+    players.each do |player|
+      hands[player] = deck.pop(table_state['n_hand_cards'])
+    end
+    table_state['discard'] = []
+
+    set_board(Board.load_board(settings['board']))
+
+    # interleve all of the team arrays to ensure we alternate teams
+    # TODO: settings for alternate play orders
+    table_state['player_order'] = teams['blue']['players'].zip(teams['green']['players'], teams['red']['players']).zip.flatten.compact
+    table_state['active_player'] = table_state['player_order'].sample
+    table_state['turn_state'] = 'WAITING_TO_PLAY'
+    table_state['turn'] = 1
   end
 
   def new_game
@@ -42,181 +85,80 @@ class Game < ApplicationItem
     if data['state'] != 'GAME_OVER'
       raise "Unable to start a NEW game in state: #{data['state']}"
     end
-
-    data['round'] = 0
-    data['table_state'] = {}
-    data['round_summaries'] = []
-    data['state'] = 'PLAYING'
-    data['deck'] = Deck.standard_deck
-    data['score'] = players.map { |p| [p, 0] }.to_h
-    table_state['dealer'] = players.first
-    start_round(data['round'])
+    # TODO: Implement me!
   end
 
-  def new_round
-    data['round'] = data['round'].to_i + 1
-    data['state'] = 'PLAYING'
-    start_round(data['round'])
-  end
-
-  def start_round(round)
-    # determine new dealer
-    table_state['dealer'] = next_player(table_state['dealer'])
-    table_state['deck'] = deck = (0...data['deck'].size).to_a.shuffle
-    table_state['hands'] = hands = {}
-    players.each do |player|
-      hands[player] = deck.pop(round + 3)
+  # play up to max_turns of CPU players
+  # Returns instantly if active player is not a CPU
+  def play_cpu(max_turns=nil)
+    validate_data
+    if data['state'] != 'WAITING_TO_PLAY'
+      raise ArgumentError, "Invalid game state: #{data['state']}"
     end
-    table_state['discard'] = [deck.pop, deck.pop]
-
-    table_state['laid_down'] = {}
-    table_state['laying_down'] = nil
-
-    table_state['active_player'] = next_player(table_state['dealer'])
-    table_state['turn_state'] = 'WAITING_TO_DRAW'
-    table_state['turn'] = 1
+    max_turns ||= data["cpu_players"].size
+    t = 0
+    while t < max_turns && data["cpu_players"].include?(active_player)
+      _play_cpu
+      t += 1
+    end
   end
 
-  # draw_type can be DECK, DISCARD
-  def draw(player, draw_type)
+  # internal method.  Active player MUST already be a cpu
+  # plays one round for the cpu
+  # gets the score for every possible (non jack) play for the cpu,
+  # picks the best and plays
+  def _play_cpu
+    scores = []
+    board = get_board
+    cpu = active_player
+    team = player_team[cpu]
+    hand = hand(cpu)
+    hand.each_with_index do |cI, hI|
+      # skip jacks... for now
+      # TODO: Handle jacks
+      c = Deck.card(cI)
+      next if c[:number] == 11
+      board.board_loc(c).each do |p_bI|
+        if board.tokens[p_bI].nil?
+          r, c = board.bI_to_rc(p_bI)
+          scores << {hI: hI, cI: cI, bI: p_bI, row: r, col: c, score: board.score_move(r, c, team, settings['sequence_length'])}
+        end
+      end
+    end
+    play = (scores.sort_by { |s| s[:score] }).last
+    play_card(cpu, play[:cI], play[:row], play[:col])
+  end
+
+  def play_card(player, cardI, row, col)
     validate_turn(player)
-    unless table_state['turn_state'] == 'WAITING_TO_DRAW'
-      raise "Cannot draw, turn state: #{table_state['turn_state']}"
-    end
 
-    case draw_type
-    when 'DECK'
-      card = table_state['deck'].pop
-    when 'DISCARD'
-      card = table_state['discard'].pop
-    else
-      raise 'Invalid draw_type'
-    end
+    cardI = cardI.to_i
+    row = row.to_i
+    col = col.to_i
 
-    table_state['hands'][player] << card
-    table_state['turn_state'] = 'WAITING_TO_DISCARD'
-  end
-
-  # draw_type can be DECK, DISCARD
-  def discard(player, card)
-    validate_turn(player)
-    unless table_state['turn_state'] == 'WAITING_TO_DISCARD'
-      raise "Cannot discard, turn state: #{table_state['turn_state']}"
-    end
-
-    unless table_state['laid_down'].blank?
-      raise "Last turn - must lay down"
-    end
-
-    hand_i = hand(player).find_index(card.to_i)
+    hand_i = hand(player).find_index(cardI)
     if hand_i.nil?
       raise "Cannot discard card: #{card} from hand: #{hand(player)}"
     end
 
+    team = player_team[player]
+
+    board = get_board
+    board.play(cardI, row, col, team)
+    new_sequences = board.new_sequences_at(row, col, team, settings['sequence_length']) # this also updates the board
+    puts "NEW SEQUENCE: #{new_sequences}" if new_sequences.size > 0
+
     table_state['hands'][player].delete_at(hand_i)
-    table_state['discard'] << card
-
-    if players.size == 1
-      # put a random card on the discard
-      table_state['discard'] << table_state['deck'].pop
-    end
-
+    table_state['discard'] << cardI
+    table_state['hands'][player] << table_state['deck'].pop
     next_turn(player)
   end
 
-  #laid_down:
-  #     {
-  #       words: [ [cid, cid], [cid] ]
-  #       leftover: [ cids ]
-  #       discard: cid  #required single card
-  #     }
-  def laydown(player, laid_down)
-    validate_turn(player)
-    unless table_state['turn_state'] == 'WAITING_TO_DISCARD'
-      raise "Cannot laydown, turn state: #{table_state['turn_state']}"
-    end
-
-    # remove zero card words
-    laid_down['words'] = laid_down['words'].select{ |w| w && w.length > 0 }
-
-    # TODO: validate all cards played were in the hand
-    words = laid_down[:words].map do |cards|
-      points = 0
-      word = ""
-      cards.each do |card|
-        deck_card = data['deck'][card.to_i]
-        points += deck_card[1].to_i
-        word << deck_card[0]
-      end
-      {'word' => word, 'points' => points}
-    end
-    word_score = words.map { |w| w['points'] }.sum
-    leftover_score = laid_down[:leftover].map { |c| data['deck'][c.to_i][1].to_i }.sum
-    score = [word_score - leftover_score, 0].max
-
-    table_state['laid_down'][player] = {
-      'cards' => laid_down[:words],
-      'words' => words,
-      'leftover' => laid_down[:leftover],
-      'score' => [score, 0].max
-    }
-
-    table_state['hands'][player] = []
-    table_state['discard'] << laid_down[:discard]
-
-    next_turn(player)
-  end
-
-  def laying_down(player, laid_down)
-    validate_turn(player)
-    unless table_state['turn_state'] == 'WAITING_TO_DISCARD'
-      raise "Cannot laydown, turn state: #{table_state['turn_state']}"
-    end
-
-    if laid_down['words'].blank?
-      table_state['laying_down'] = nil
-      return
-    end
-
-    # remove zero card words
-    laid_down['words'] = laid_down['words'].select{ |w| w && w.length > 0 }
-
-    # TODO: validate all cards played were in the hand
-    words = laid_down['words'].map do |cards|
-      points = 0
-      word = ""
-      cards.each do |card|
-        card = card.to_i
-        points += data['deck'][card][1].to_i
-        word << data['deck'][card][0]
-      end
-      {word: word, points: points}
-    end
-    word_score = words.map { |w| w[:points] }.sum
-    leftover_score = laid_down[:leftover].map { |c| data['deck'][c.to_i][1].to_i }.sum
-    score = [word_score - leftover_score, 0].max
-
-    table_state['laying_down'] = {
-      'cards' => laid_down[:words],
-      'words' => words,
-      'leftover' => laid_down[:leftover],
-      'score' => score
-    }
-  end
 
   def next_turn(player)
     np = next_player(player)
-    table_state['laying_down'] = nil
-    if table_state["laid_down"].include? np
-      # end of the round - this player has already laid down
-      end_round
-    else
-      if player == table_state['dealer']
-        table_state['turn'] = table_state['turn'].to_i + 1
-      end
-      table_state['active_player'] = np
-      table_state['turn_state'] = 'WAITING_TO_DRAW'
-    end
+    table_state['turn'] = table_state['turn'].to_i + 1
+    table_state['active_player'] = np
   end
 
   def table_state
@@ -227,17 +169,46 @@ class Game < ApplicationItem
     data['players']
   end
 
+  def player_team
+    data['player_team']
+  end
+
+  def teams
+    data['teams']
+  end
+
+  def settings
+    data['settings']
+  end
+
+  def player_order
+    table_state['player_order']
+  end
+
   # map of player to index
   def p_i(player)
-    players.find_index(player)
+    player_order.find_index(player)
   end
 
   def next_player(player)
-    players[(p_i(player) + 1) % players.size]
+    player_order[(p_i(player) + 1) % player_order.size]
   end
 
   def hand(player)
     table_state['hands'][player].map {|cI| cI.to_i }
+  end
+
+  def active_player
+    table_state['active_player']
+  end
+
+  def set_board(board)
+    @board = board
+    table_state['board'] = board.to_h
+  end
+
+  def get_board
+    @board ||= Board.from_h(table_state['board'])
   end
 
   private
@@ -256,138 +227,29 @@ class Game < ApplicationItem
     end
   end
 
-  def end_round
-    table_state['turn_state'] = 'ROUND_COMPLETE'
-    data['state'] = 'WAITING_FOR_NEXT_ROUND'
-    if data['round'].to_i >= 7
-      data['state'] = 'GAME_OVER'
-    end
-
-    # compute longest word and most word bonuses (2+ players only)
-    longest_words = longest_words(table_state["laid_down"])
-    if players.size >= 2 && data['settings'] && data['settings']['most_words_bonus']
-      if (longest_words[0][1] > longest_words[1][1])
-        player = longest_words[0][0]
-        puts "Longest Word: #{player}"
-        table_state["laid_down"][player]['longest_word_bonus'] = 10
-        table_state['laid_down'][player]['score'] += 10
-      end
-    end
-
-    # compute 7+ letter bonus
-    if data['settings'] && data['settings']['word_smith_bonus']
-      longest_words.each do |player, size|
-        if size >= 7
-          table_state["laid_down"][player]['word_smith_bonus'] = 10
-          table_state['laid_down'][player]['score'] += 10
-        end
-      end
-    end
-
-    if players.size >= 2 && data['settings'] && data['settings']['most_words_bonus']
-      n_words = table_state["laid_down"].map {|p,x| [p, x['words'].size] }.sort_by { |x| x[1] }.reverse!
-      if (n_words[0][1] > n_words[1][1])
-        player = n_words[0][0]
-        table_state["laid_down"][player]['most_words_bonus'] = 10
-        table_state['laid_down'][player]['score'] += 10
-      end
-    end
-
-    # compute word list bonuses (if in settings)
-    if (bonus_words = wordlist) #returns nil unless configured
-      table_state["laid_down"].each do |player, x|
-        words = x['words'].map { |w| w['word'] }.select { |w| bonus_words.include? w }
-        if words.length > 0
-          puts "PLAYER BONUS! #{player} : #{words.join(', ')}"
-          bw_score = 10 * words.size
-          table_state["laid_down"][player]['bonus_words_score'] = bw_score
-          table_state['laid_down'][player]['score'] += 10
-          table_state["laid_down"][player]['bonus_words'] = words.join(', ')
-        end
-      end
-    end
-
-    data['round_summaries'] << table_state['laid_down']
-    compute_stats
-
-    players.each do |player|
-      data['score'][player] = data['score'][player].to_i + table_state['laid_down'][player]['score'].to_i
-    end
-  end
-
-  # compute stats from round summaries
-  def compute_stats
-    rounds = data['round_summaries']
-    stats = {}
-
-    # list of best (highest score) words by player
-    # goal: flat map to [player, word, score]
-    best_words = rounds.each_with_index.map { |summary, round_i| summary.map { |p, x| x['words'].map { |w| [p, w['word'], w['points'].to_i, round_i] }}}.flatten(2).sort_by { |x| x[2] }.reverse
-    stats['best_words'] = best_words
-
-    longest_words = rounds.each_with_index.map { |summary, round_i| summary.map { |p, x| x['words'].map { |w| [p, w['word'], w['word'].length, round_i] }}}.flatten(2).sort_by { |x| x[2] }.reverse
-    stats['longest_words'] = longest_words
-
-    n_words = {}
-    rounds.each { |summary| summary.each { |p, x| n_words[p] = n_words.fetch(p, 0) + x['words'].length } }
-    n_words = n_words.to_a.sort_by { |x| x[1] }.reverse
-    stats['n_words'] = n_words
-
-    leftovers = {}
-    rounds.each { |summary| summary.each { |p, x| leftovers[p] = leftovers.fetch(p, 0) + x['leftover'].length } }
-    leftovers = leftovers.to_a.sort_by { |x| x[1] }
-    stats['leftover_letters'] = leftovers
-
-    data['stats'] = stats
-  end
-
   def self.create_fresh
     game = Game.new
     game.data = {
       'players' => [],
+      'teams' => {
+        'green' => {'color' => '0x00ff00', 'players' => []},
+        'blue' => {'color' => '0x0000ff', 'players' => []},
+        'red' => {'color' => '0xff0000', 'players' => []}
+      },
+      "player_team" => {
+
+      },
+      "cpu_players" => [],
       'state' => 'WAITING_FOR_PLAYERS',
-      'round' => 0,
+      'turn' => 0,
       'table_state' => {},
-      'round_summaries' => [],
       'settings' => {
-        'enable_bonus_words' => true,
-        'bonus_words' => 'animals_wordlist',
-        'longest_word_bonus' => true,
-        'most_words_bonus' => false,
-        'word_smith_bonus' => true
+        'sequences_to_win' => 2,
+        'sequence_length' => 5,
+        'board' => 'spiral',
+        'custom_hand_cards' => nil
       }
     }
     game
   end
-
-  # return Set<String>
-  def wordlist
-    if data['settings'] &&
-      data['settings']['enable_bonus_words'] &&
-      (wl_name = data['settings']['bonus_words'])
-
-      @wordlists ||= {}
-      @wordlists[wl_name] ||= load_wordlist(wl_name)
-    end
-  end
-
-  def load_wordlist(wl_name)
-    puts "Loading wordlist: #{wl_name}"
-    words = File.open("public/assets/#{wl_name}.txt").readlines.map(&:chomp).map(&:upcase)
-    puts "Loaded: #{words.length} words"
-    Set.new(words)
-  end
-end
-
-def longest_words(laid_down)
-  laid_down.map(&method(:player_longest_word)).sort_by { |x| x[1] }.reverse
-end
-
-def player_longest_word(p,x)
-  puts "Computing player longest word: #{p}, #{x}"
-  [p, longest_word(x['words'])]
-end
-
-def longest_word(words)
-  words.map{ |y| y['word']&.size || 0 }.max || 0
 end

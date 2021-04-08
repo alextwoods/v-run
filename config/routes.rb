@@ -4,15 +4,13 @@ Jets.application.routes.draw do
   resources :games, except: [:edit, :update] do
     get "play", on: :member
     post "player", on: :member
+    post "cpu", on: :member
+    post "player_team", on: :member
     post "settings", on: :member
     post "start", on: :member
     post "newgame", on: :member
-    post "round", on: :member
 
-    post "draw", on: :member
-    post "layingdown", on: :member
-    post "laydown", on: :member
-    post "discard", on: :member
+    post "play", on: :member
   end
 
 

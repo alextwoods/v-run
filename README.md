@@ -1,14 +1,14 @@
 # V-Runs (Chain)
 
 ## Running
-* AWS_REGION=us-west-1  jets server
+* AWS_REGION=us-west-1  bundle exec jets server
 * bin/webpack-dev-server
 
 ## Deploy
 To deploy need to be using us-west-1 as region
 
 * jets webpacker:compile 
-* AWS_REGION=us-west-1 jets deploy
+* AWS_REGION=us-west-1 jets deployG
 
 ## Add JS Packages
 yarn add <package>  

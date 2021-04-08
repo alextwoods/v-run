@@ -1,5 +1,5 @@
 Jets.application.configure do
-  config.project_name = "zibbler"
+  config.project_name = "vrun"
   config.mode = "api"
 
   config.prewarm.enable = false # default is true
