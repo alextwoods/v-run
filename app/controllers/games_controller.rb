@@ -46,12 +46,20 @@ class GamesController < ApplicationController
 
   # Add a CPU player to the game
   def cpu
-    # TODO
+    @game.add_cpu
+    @game.replace
+    puts "Added CPU"
+    render json: @game
   end
 
   # Updates a players team
   def player_team
+    player_team = player_team_params
+    puts "Update team: #{player_team}"
+    @game.set_player_team(player_team[:player], player_team[:team])
 
+    @game.replace
+    render json: @game
   end
 
   # update settings
@@ -81,42 +89,6 @@ class GamesController < ApplicationController
     render json: @game
   end
 
-  # start a new round
-  def round
-    @game.new_round
-    @game.replace
-    render json: @game
-  end
-
-  def draw
-    draw_type = draw_params
-    @game.draw(player_cookie, draw_type)
-    @game.replace
-    render json: @game
-  end
-
-
-  def discard
-    card = discard_params
-    @game.discard(player_cookie, card)
-    @game.replace
-    render json: @game
-  end
-
-  def laydown
-    laid_down = laydown_params
-    @game.laydown(player_cookie, laid_down)
-    @game.replace
-    render json: @game
-  end
-
-  def layingdown
-    laying_down = laydown_params
-    @game.laying_down(player_cookie, laying_down)
-    @game.replace
-    render json: @game
-  end
-
   def delete
     # For some reason this does not work.  Use the class method instead
     # @game.delete
@@ -138,8 +110,12 @@ class GamesController < ApplicationController
     params.require(:player)
   end
 
+  def player_team_params
+    params.require(:player).permit(:player, :team)
+  end
+
   def settings_params
-    params.require(:settings).permit(:enable_bonus_words, :word_smith_bonus, :longest_word_bonus, :most_words_bonus, :bonus_words)
+    params.require(:settings).permit(:board, :sequence_length, :sequences_to_win, :custom_hand_cards)
   end
 
 

@@ -29,7 +29,7 @@ class Game < ApplicationItem
     end
   end
 
-  def add_cpu()
+  def add_cpu
     name = (CPU_NAMES - players).sample
     add_player(name)
     data["cpu_players"] << name
@@ -253,3 +253,4 @@ class Game < ApplicationItem
     game
   end
 end
+

@@ -9,6 +9,10 @@ Jets.application.configure do
   #
   config.iam_policy = [Jets::Application.default_iam_policy, 'dynamodb', 'logs']
 
+  # lograge doesn't seem to apply to jets :-(
+  # config.lograge.enabled = true
+  # config.lograge.ignore_actions = ['GamesController#show']
+
   # config.env_extra = 2 # can also set this with JETS_ENV_EXTRA
   # config.autoload_paths = []
 

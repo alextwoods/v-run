@@ -25,8 +25,6 @@
   window.gamePath = "<%= @game_path %>"
   window.rootPath = "<%= @root_path %>"
   window.notificationPath = "<%= asset_path("/assets/notification_bow.mp3") %>"
-  window.bonus_wordlist = "<%= asset_path("/assets/#{@game.data['settings']['bonus_words']}.txt") %>"
-
 </script>
 <%= javascript_pack_tag 'chain_app' %>
 </body>

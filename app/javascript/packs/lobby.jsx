@@ -10,10 +10,10 @@ export default class Lobby extends React.Component {
     render() {
         return (
             <Container>
-                <Row className="p-3  justify-content-center">
+                <Row className="justify-content-center">
                     <Col md={6}>
                         {this.props.player
-                            ? <StartGame startGame={this.props.startGame} />
+                            ? <AddCpuPlayer addCpuPlayer={this.props.addCpuPlayer}/>
                             : <PlayerInput addPlayer={this.props.addPlayer} requestState={this.props.requestState}/>
                         }
                     </Col>
@@ -21,16 +21,35 @@ export default class Lobby extends React.Component {
 
                 <Row className="justify-content-center">
                     <Col md={6}>
-                        <PlayerList players={this.props.game.players} player={this.props.player}/>
+                        <PlayerList players={this.props.game.players} cpuPlayers={this.props.game.cpu_players} playerTeams={this.props.game.player_team} player={this.props.player} updatePlayerTeam={this.props.updatePlayerTeam}/>
                     </Col>
                 </Row>
 
+                { this.props.game.players.size >= 2 &&
+                    <Row>
+                        <Col md={6}>
+                            <StartGame startGame={this.props.startGame}/>
+                        </Col>
+                    </Row>
+                }
+
                 <Row className="justify-content-center">
                     <Col md={6}>
+                        <GameSettings settings={this.props.game.settings} updateSettings={this.props.updateSettings} requestState={this.props.requestState} />
+                    </Col>
+                </Row>
+
+
+                <Row className="justify-content-center">
+                    <Col md={6}>
+                        <hr/>
+                        <h4>
+                            Invite Others
+                        </h4>
                         <p>
                             To invite players to join the game, simply send them the url of this page:
                         </p>
-                        <input readOnly={true} id="game-url-copyarea" className="form-text text-muted url-copy-box" value={"http://ziddler.alexwoods.tech/games/" + window.gameId + "/play"} />
+                        <input readOnly={true} id="game-url-copyarea" className="form-text text-muted url-copy-box" value={"http://chain.alexwoods.tech/games/" + window.gameId + "/play"} />
                         <Button color="primary" onClick={function() {
                             let copyTextarea = document.querySelector("#game-url-copyarea");
                             copyTextarea.focus();
@@ -46,11 +65,6 @@ export default class Lobby extends React.Component {
                         }}>
                             Copy
                         </Button>
-                    </Col>
-                </Row>
-                <Row className="justify-content-center">
-                    <Col md={6}>
-                        <GameSettings settings={this.props.game.settings} updateSettings={this.props.updateSettings} requestState={this.props.requestState} />
                     </Col>
                 </Row>
 
@@ -94,6 +108,15 @@ class PlayerInput extends React.Component {
     }
 }
 
+
+function AddCpuPlayer(props) {
+    return(
+        <Button color="primary" onClick={props.addCpuPlayer}>
+            Add CPU Player
+        </Button>
+    )
+}
+
 function StartGame(props) {
     return(
         <Button color="primary" onClick={props.startGame}>
@@ -106,19 +129,39 @@ function PlayerList(props) {
     const otherPlayers =  props.players.filter( p => p != props.player );
     const playerItems = otherPlayers.map (player =>
         <ListGroupItem key={player}>
-            {player}
+            <PlayerDisplay player={player} isSelf={false} isCpu={props.cpuPlayers.includes(player)} team={props.playerTeams[player]} updatePlayerTeam={props.updatePlayerTeam} />
         </ListGroupItem>
     );
 
     return(
-        <ListGroup>
+        <ListGroup className="p-2">
             {props.player &&
                 <ListGroupItem>
-                    <b>{props.player}</b>
+                    <PlayerDisplay player={props.player} isSelf={true} isCpu={false} team={props.playerTeams[props.player]} updatePlayerTeam={props.updatePlayerTeam} />
                 </ListGroupItem>}
             {playerItems}
         </ListGroup>
     );
+}
+
+function PlayerDisplay(props) {
+    return(
+        <span>
+            {props.isSelf ? <b>{props.player}</b> : props.player }
+            {props.isCpu ? " (CPU)" : "" }
+            <Input type="select" name="boardList" id="boardListSelector"
+                   value={props.team}
+                   onChange={(event) => {
+                       props.updatePlayerTeam({player: props.player, team: event.target.value});
+                       event.preventDefault();
+                   }}
+            >
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="red">Red</option>
+            </Input>
+        </span>
+    )
 }
 
 Lobby.propTypes = {
@@ -143,63 +186,43 @@ class GameSettings extends React.Component {
     render() {
         return (
             <div>
+                <hr/>
                 <h4>
                     Game settings:
                 </h4>
                 <Form>
-                    <FormGroup check>
-                        <Label check>
-                            <Input type="checkbox" name="bonus_words" id="enable_bonus_words"
-                                   checked={this.props.settings.enable_bonus_words}
-                                   disabled={this.props.requestState == 'ACTING'}
-                                   onChange={this.handleSubmit}
-                            />
-                            Bonus Words
-                        </Label>
-                    </FormGroup>
                     <FormGroup>
-                        <Input type="select" name="wordList" id="wordListSelect"
-                               value={this.props.settings.bonus_words}
-                               disabled={!this.props.settings.enable_bonus_words}
+                        <Label for="boardListSelector">Board Layout</Label>
+                        <Input type="select" name="boardList" id="boardListSelector"
+                               value={this.props.settings.board}
                                onChange={(event) => {
-                                   this.props.updateSettings({bonus_words: event.target.value});
+                                   this.props.updateSettings({board: event.target.value});
                                    event.preventDefault();
                                }}
                         >
-                            <option value={"animals_wordList"}>Animals</option>
-                            <option value={"foods_wordlist"}>Foods</option>
-                            <option value={"holiday_wordlist"}>Holiday Words</option>
+                            <option value={"spiral"}>Spiral</option>
+                            <option value={"horizontal"}>Horizontal</option>
                         </Input>
                     </FormGroup>
-                    <FormGroup check>
-                        <Label check>
-                            <Input type="checkbox" name="bonus_words" id="longest_word_bonus"
-                                   checked={this.props.settings.longest_word_bonus}
-                                   disabled={this.props.requestState == 'ACTING'}
-                                   onChange={this.handleSubmit}
-                            />
-                            Longest Word Bonus
-                        </Label>
+                    <FormGroup>
+                        <Label for="sequenceLength">Sequence Length</Label>
+                        <Input type="number" min="3" max="10" id="sequenceLength"
+                               value={this.props.settings.sequence_length}
+                               onChange={(event) => {
+                                   this.props.updateSettings({sequence_length: event.target.value});
+                                   event.preventDefault();
+                               }}
+                       />
                     </FormGroup>
-                    <FormGroup check>
-                        <Label check>
-                            <Input type="checkbox" name="bonus_words" id="most_words_bonus"
-                                   checked={this.props.settings.most_words_bonus}
-                                   disabled={this.props.requestState == 'ACTING'}
-                                   onChange={this.handleSubmit}
-                            />
-                            Most Words Bonus
-                        </Label>
-                    </FormGroup>
-                    <FormGroup check>
-                        <Label check>
-                            <Input type="checkbox" name="bonus_words" id="word_smith_bonus"
-                                   checked={this.props.settings.word_smith_bonus}
-                                   disabled={this.props.requestState == 'ACTING'}
-                                   onChange={this.handleSubmit}
-                            />
-                            Wordsmith Word Bonus
-                        </Label>
+                    <FormGroup>
+                        <Label for="sequencesToWin">Sequence To Win</Label>
+                        <Input type="number" min="1" max="10" id="sequencesToWin"
+                               value={this.props.settings.sequences_to_win}
+                               onChange={(event) => {
+                                   this.props.updateSettings({sequences_to_win: event.target.value});
+                                   event.preventDefault();
+                               }}
+                        />
                     </FormGroup>
                 </Form>
             </div>
