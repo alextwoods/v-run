@@ -1,26 +1,34 @@
 # V-Runs (Chain)
 
 ## Running
-* AWS_REGION=us-west-1  bundle exec jets server
-* bin/webpack-dev-server
+```sh
+AWS_REGION=us-west-1  bundle exec jets server
+bin/webpack-dev-server
+```
 
 ## Deploy
 To deploy need to be using us-west-1 as region
 
 * jets webpacker:compile 
-* AWS_REGION=us-west-1 jets deployG
+* AWS_REGION=us-west-1 jets deploy
 
 ## Add JS Packages
 yarn add <package>  
 
 
-Useful curl commands:
-* curl -X DELETE localhost:8888/games/0e1741773eb4ee97afb91126c2869e3873bfb3df
-* curl -X POST localhost:8888/games
-* curl -X POST localhost:8888/games/3cfd157a4b97f97cd1ba8d68a5e9f4878d16a1cc/start
-
-For commands needing cookies:
-* curl -X POST -b cookies.txt --cookie-jar cookies.txt -d player=alex localhost:8888/games/3cfd157a4b97f97cd1ba8d68a5e9f4878d16a1cc/player
+## Working TODO List
+x Disable clicking/playing on taken spots.
+x When CPU player goes first - have them play.  
+x Game log
+x Display sequence (in the Board, transform sequences to a Set/map from BoardI to team, then in Card its a quick check.)  
+x Display suites as colored symbols
+x Wilds
+  x Display
+  x  Backend handling: support is valid play
+  *  CPU Support (later)  
+* Some animation for CPU Players playing?
+* Game log over -> highlight the space where the player played.
+* CPU Player defensive calculation
 
 
 

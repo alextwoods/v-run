@@ -8,6 +8,7 @@ Jets.application.routes.draw do
     post "player_team", on: :member
     post "settings", on: :member
     post "start", on: :member
+    post "play_card", on: :member
     post "newgame", on: :member
 
     post "play", on: :member

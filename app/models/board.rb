@@ -56,22 +56,42 @@ class Board
   end
 
   def board_loc(card)
-    @card_map["#{card[:number]}#{card[:suite]}"]
+    @card_map["#{card[:number]}#{card[:suit]}"]
   end
 
   def play(cardI, row, column, team)
-    raise "Invalid play for #{team} at #{row},#{column} of card: #{cardI}" unless valid_play?(cardI, row, column)
-
-    set_token(row, column, team)
+    card = Deck.card(cardI)
+    raise "Invalid play for #{team} at #{row},#{column} of card: #{cardI}" unless valid_play?(card, row, column, team)
+    if Deck.anti_wild? card
+      removed = token_at(row, column)
+      set_token(row, column, nil) # remove the token
+      {cardI: cardI, row: row, col: column, team: team, removed: removed}
+    else
+      set_token(row, column, team)
+      {cardI: cardI, row: row, col: column, team: team}
+    end
 
   end
 
-  def valid_play?(cardI, row, column)
-    card = Deck.card(cardI)
-    if card[:number] == 11 # jack
-      raise NotImplementedError, "TODO - Handle jacks"
+  def part_of_sequence?(row, column)
+    boardI = (row * 10) + column
+    team = token_at(row, column)
+    return false unless team
+    team_sequences = @sequences.fetch(team, [])
+    team_sequences.flatten.include?(boardI)
+  end
+
+  def valid_play?(card, row, column, team)
+    if Deck.wild?(card)
+      # not a free space and theres nothing there yet
+      return self[row, column] != 'F' && token_at(row, column).nil?
+    elsif Deck.anti_wild?(card)
+      # not a free space and theres a token from another team
+      # AND the token is not part of a sequence
+      token = token_at(row, column)
+      return self[row, column] != 'F' && token && token != team && !part_of_sequence?(row, column)
     else
-      card_s = "#{card[:number]}#{card[:suite]}"
+      card_s = "#{card[:number]}#{card[:suit]}"
       # card matches and theres nothing there yet
       return card_s == self[row, column] && token_at(row, column).nil?
     end
@@ -267,7 +287,7 @@ class Board
     Board.new(h["board"], h["tokens"], h["sequences"])
   end
 
-  # Tab separated rows of cards (F for Free space, number/suite: 5S)
+  # Tab separated rows of cards (F for Free space, number/suit: 5S)
   def self.load_board(name)
     data = File.read(File.join(Jets.root, "db", "#{name}_board.tsv"))
     Board.new(data.split(/[\t\n]/))
@@ -295,7 +315,7 @@ class Board
           board[i*10 + j] = 'F'
         else
           dI, card = next_card(dI)
-          board[i*10 + j] = "#{card[:number]}#{card[:suite]}"
+          board[i*10 + j] = "#{card[:number]}#{card[:suit]}"
         end
       end
     end
@@ -326,7 +346,7 @@ class Board
             board[top*10 + i] = "F"
           else
             deckI, card = next_card(deckI)
-            board[top*10 + i] = "#{card[:number]}#{card[:suite]}"
+            board[top*10 + i] = "#{card[:number]}#{card[:suit]}"
           end
         end
         # Since we have traversed the whole first
@@ -339,7 +359,7 @@ class Board
             board[i*10 + right] = "F"
           else
             deckI, card = next_card(deckI)
-            board[i*10 + right] = "#{card[:number]}#{card[:suite]}"
+            board[i*10 + right] = "#{card[:number]}#{card[:suit]}"
           end
         end
 
@@ -353,7 +373,7 @@ class Board
             board[bottom*10 + i] = "F"
           else
             deckI, card = next_card(deckI)
-            board[bottom*10 + i] = "#{card[:number]}#{card[:suite]}"
+            board[bottom*10 + i] = "#{card[:number]}#{card[:suit]}"
           end
         end
         # Since we have traversed the whole last
@@ -366,7 +386,7 @@ class Board
             board[i*10 + left] = "F"
           else
             deckI, card = next_card(deckI)
-            board[i*10 + left] = "#{card[:number]}#{card[:suite]}"
+            board[i*10 + left] = "#{card[:number]}#{card[:suit]}"
           end
         end
         # Since we have traversed the whole first

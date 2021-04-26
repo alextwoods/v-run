@@ -76,8 +76,12 @@ class Game < ApplicationItem
     # TODO: settings for alternate play orders
     table_state['player_order'] = teams['blue']['players'].zip(teams['green']['players'], teams['red']['players']).zip.flatten.compact
     table_state['active_player'] = table_state['player_order'].sample
-    table_state['turn_state'] = 'WAITING_TO_PLAY'
-    table_state['turn'] = 1
+    table_state['state'] = 'WAITING_TO_PLAY'
+    table_state['turn'] = 0
+    table_state['log'] = []
+
+    # if a cpu player is the first player, have them play
+    play_cpu
   end
 
   def new_game
@@ -138,24 +142,52 @@ class Game < ApplicationItem
 
     hand_i = hand(player).find_index(cardI)
     if hand_i.nil?
-      raise "Cannot discard card: #{card} from hand: #{hand(player)}"
+      raise "Cannot play card: #{card} from hand: #{hand(player)}"
     end
 
     team = player_team[player]
 
     board = get_board
-    board.play(cardI, row, col, team)
-    new_sequences = board.new_sequences_at(row, col, team, settings['sequence_length']) # this also updates the board
+    log_entry = board.play(cardI, row, col, team)
+    if Deck.anti_wild?(Deck.card(cardI))
+      new_sequences = []
+    else
+      new_sequences = board.new_sequences_at(row, col, team, settings['sequence_length']) # this also updates the board
+    end
     puts "NEW SEQUENCE: #{new_sequences}" if new_sequences.size > 0
 
     table_state['hands'][player].delete_at(hand_i)
     table_state['discard'] << cardI
     table_state['hands'][player] << table_state['deck'].pop
+
+    log_entry['player'] = player
+    log_entry['new_sequences'] = new_sequences if new_sequences.size > 0
+    table_state['log'] << log_entry
     next_turn(player)
+  end
+
+  # @overide
+  # ensure that the @board gets properly serialized
+  def replace
+    if @board
+      table_state['board'] = @board.to_h
+    end
+
+    super
   end
 
 
   def next_turn(player)
+    # check for wins
+    get_board.sequences.each_pair do |team, sequences|
+      if sequences.size >= settings['sequences_to_win']
+        table_state['state'] = 'GAME_OVER'
+        table_state['winner'] = team
+      end
+    end
+
+    return unless table_state['state'] == 'WAITING_TO_PLAY'
+
     np = next_player(player)
     table_state['turn'] = table_state['turn'].to_i + 1
     table_state['active_player'] = np

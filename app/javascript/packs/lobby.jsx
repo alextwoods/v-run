@@ -8,6 +8,7 @@ import { ListGroup, ListGroupItem } from 'reactstrap';
 export default class Lobby extends React.Component {
 
     render() {
+        console.log(this.props.game.players.length);
         return (
             <Container>
                 <Row className="justify-content-center">
@@ -25,7 +26,7 @@ export default class Lobby extends React.Component {
                     </Col>
                 </Row>
 
-                { this.props.game.players.size >= 2 &&
+                { this.props.game.players.length >= 2 &&
                     <Row>
                         <Col md={6}>
                             <StartGame startGame={this.props.startGame}/>

@@ -16,6 +16,7 @@ class GamesController < ApplicationController
     @games_path = add_stage_name(games_path)
   end
 
+  # Used to render the SPA react app with various paths needed by the frontend.
   def play
     puts "Rendering SPA for play"
     @game_path = add_stage_name(game_path(@game.id))
@@ -82,6 +83,21 @@ class GamesController < ApplicationController
     render json: @game
   end
 
+  def play_card
+    p = play_card_params
+    puts "play_card: #{p}"
+    bI = p["boardI"].to_i
+    row = bI / 10
+    col = bI % 10
+    @game.play_card(player_cookie, p['cardI'], row, col)
+
+    # play how ever many CPU players there are until we get to a human
+    @game.play_cpu
+
+    @game.replace
+    render json: @game
+  end
+
   # Restarts the game as a new game
   def newgame
     @game.new_game
@@ -119,8 +135,8 @@ class GamesController < ApplicationController
   end
 
 
-  def draw_params
-    params.require(:draw_type)
+  def play_card_params
+    params.require(:play).permit(:cardI, :boardI)
   end
 
   def discard_params

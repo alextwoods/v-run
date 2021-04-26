@@ -46,7 +46,9 @@ class ChainGame extends React.Component {
             game: null,
             player: null,
             toast: null,
-            playingTurnDing: false
+            playingTurnDing: false,
+            selectedCard: null,
+            isSelectedCardClicked: false,
         };
 
         this.onAjaxError = this.onAjaxError.bind(this);
@@ -59,13 +61,17 @@ class ChainGame extends React.Component {
         this.startNewGame = this.startNewGame.bind(this);
         this.dismissToast = this.dismissToast.bind(this);
         this.turnDingDone = this.turnDingDone.bind(this);
+
+        this.cardHovered = this.cardHovered.bind(this);
+        this.cardClicked = this.cardClicked.bind(this);
+        this.playCard = this.playCard.bind(this);
     }
 
     componentDidMount() {
         console.log("Mounted.  Kicking off first state load");
 
         this.refreshGameData();
-        // this.interval = setInterval(this.refreshGameData, 1000);
+        this.interval = setInterval(this.refreshGameData, 1000);
     }
 
     componentWillUnmount() {
@@ -218,6 +224,42 @@ class ChainGame extends React.Component {
         });
     }
 
+    cardHovered(cardI) {
+        // if a card has been clicked, ignore it.
+        if (!this.state.isSelectedCardClicked) {
+            this.setState({selectedCard: cardI, isSelectedCardClicked: false});
+        }
+    }
+
+    cardClicked(cardI) {
+        // https://dev.to/vibhanshu909/click-outside-listener-for-react-components-in-10-lines-of-code-4gjo
+        if (this.state.player == this.state.game.table_state.active_player ) {
+            this.setState({selectedCard: cardI, isSelectedCardClicked: true});
+        }
+    }
+
+    playCard(cardI, boardI) {
+        if (this.state.player == this.state.game.table_state.active_player ) {
+            if (this.state.requestState == "ACTING") {
+                console.warn("Action already in progress.  Skipping");
+                return;
+            }
+
+            this.setState({requestState: 'ACTING'} )
+
+            $.ajax({
+                url: this.props.gamePath + "/play_card",
+                type: 'POST',
+                data: JSON.stringify({play: {cardI: cardI, boardI: boardI}}),
+                success: (response) => {
+                    this.setState({requestState: 'NONE', game: response.data,
+                        selectedCard: null, isSelectedCardClicked: false})
+                },
+                error: this.onAjaxError
+            });
+        }
+    }
+
     turnDingDone() {
         this.setState({playingTurnDing: false});
     }
@@ -241,6 +283,11 @@ class ChainGame extends React.Component {
                           updateSettings={this.updateSettings}
                           startGame={this.startGame}
                           startNewGame={this.startNewGame}
+                          cardHovered={this.cardHovered}
+                          cardClicked={this.cardClicked}
+                          playCard={this.playCard}
+                          selectedCard={this.state.selectedCard}
+                          isSelectedCardClicked={this.state.isSelectedCardClicked}
                           dismissToast ={this.dismissToast}
                           turnDingDone={this.turnDingDone}
                   />
