@@ -111,7 +111,7 @@ class Board
 
   def score_dir(s, sequence_length)
     return 0 if s.size < sequence_length
-    n_empty = s.filter(&:nil?).size
+    n_empty = s.select(&:nil?).size
     n_tokens = s.size - n_empty
     to_seq = [sequence_length - n_tokens, 0.0001].max # prevent negative, prevent blow up of div by zero
     sequence_length / (to_seq ** 1.8)

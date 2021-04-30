@@ -6,7 +6,7 @@ class Game < ApplicationItem
   #   nplayers  2  3  4  5  6  7  8  9  10 11 12
   HAND_CARDS = [7, 6, 6, 6, 5, 5, 4, 4, 3, 3, 3]
 
-  CPU_NAMES = %w[bender data chip hal marvin boilerplate cloud]
+  CPU_NAMES = %w[bender data chip hal marvin cloud hal bin nibble]
 
   def add_player(player)
     validate_data
@@ -38,7 +38,7 @@ class Game < ApplicationItem
   def set_player_team(player, team)
     # check if the player is in a team already, if so remove them first
     if (previous_team = player_team[player])
-      data["teams"][previous_team]["players"] = data["teams"][previous_team]["players"].filter { |p| p != player }
+      data["teams"][previous_team]["players"] = data["teams"][previous_team]["players"].select { |p| p != player }
     end
     player_team[player] = team
     data["teams"][team]["players"] << player
@@ -70,7 +70,7 @@ class Game < ApplicationItem
     end
     table_state['discard'] = []
 
-    set_board(Board.load_board(settings['board']))
+    set_board(Board.send("build_#{settings['board']}"))
 
     # interleve all of the team arrays to ensure we alternate teams
     # TODO: settings for alternate play orders
@@ -101,7 +101,7 @@ class Game < ApplicationItem
     end
     max_turns ||= data["cpu_players"].size
     t = 0
-    while t < max_turns && data["cpu_players"].include?(active_player)
+    while t < max_turns && next_player_cpu?
       _play_cpu
       t += 1
     end
@@ -259,6 +259,10 @@ class Game < ApplicationItem
     end
   end
 
+  def next_player_cpu?
+    data["cpu_players"].include?(active_player)
+  end
+
   def self.create_fresh
     game = Game.new
     game.data = {
@@ -279,7 +283,8 @@ class Game < ApplicationItem
         'sequences_to_win' => 2,
         'sequence_length' => 5,
         'board' => 'spiral',
-        'custom_hand_cards' => nil
+        'custom_hand_cards' => nil,
+        'cpu_wait_time' => ENV['ENV_REMOTE'] ? 2.5 : nil # ENV_REMOTE is defined in .env.development.remote
       }
     }
     game

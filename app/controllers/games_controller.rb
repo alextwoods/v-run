@@ -83,6 +83,7 @@ class GamesController < ApplicationController
     render json: @game
   end
 
+  iam_policy "lambda" # required to run Jobs
   def play_card
     p = play_card_params
     puts "play_card: #{p}"
@@ -91,10 +92,18 @@ class GamesController < ApplicationController
     col = bI % 10
     @game.play_card(player_cookie, p['cardI'], row, col)
 
-    # play how ever many CPU players there are until we get to a human
-    @game.play_cpu
+    # the order of game.replace is sensitive (because in local, perform_later runs in the same thread
+    # here, save it first, then run the cpu
+    if @game.settings['cpu_wait_time'] && @game.settings['cpu_wait_time'] > 0
+      @game.replace
+      if @game.next_player_cpu?
+        PlayCpuJob.perform_later(:play, {game_id: @game.id, sleep: @game.settings['cpu_wait_time'].to_i})
+      end
+    else
+      @game.play_cpu
+      @game.replace
+    end
 
-    @game.replace
     render json: @game
   end
 

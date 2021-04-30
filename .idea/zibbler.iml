@@ -77,12 +77,10 @@
     <orderEntry type="library" scope="PROVIDED" name="jmespath (v1.4.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="kramdown (v2.2.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="launchy (v2.5.0, chruby: ruby-2.6.5) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="lograge (v0.11.2, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="loofah (v2.5.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="mail (v2.7.1, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="memoist (v0.16.2, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="method_source (v1.0.0, chruby: ruby-2.6.5) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="mimemagic (v0.3.4, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="mini_mime (v1.0.2, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="mini_portile2 (v2.4.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="minitest (v5.14.0, chruby: ruby-2.6.5) [gem]" level="application" />
@@ -102,7 +100,6 @@
     <orderEntry type="library" scope="PROVIDED" name="rake (v13.0.3, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="recursive-open-struct (v1.1.1, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="regexp_parser (v1.7.0, chruby: ruby-2.6.5) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="request_store (v1.5.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rexml (v3.2.4, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec (v3.9.0, chruby: ruby-2.6.5) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec-core (v3.9.1, chruby: ruby-2.6.5) [gem]" level="application" />
@@ -199,140 +196,7 @@
   </component>
   <component name="RakeTasksCache">
     <option name="myRootTask">
-      <RakeTaskImpl id="rake">
-        <subtasks>
-          <RakeTaskImpl id="db">
-            <subtasks>
-              <RakeTaskImpl description="Creates the database from DATABASE_URL or config/database.yml for the current RAILS_ENV (use db:create:all to create all databases in the config). Without RAILS_ENV or when RAILS_ENV is development, it defaults to creating the development and test databases" fullCommand="db:create" id="create" />
-              <RakeTaskImpl description="Drops the database from DATABASE_URL or config/database.yml for the current RAILS_ENV (use db:drop:all to drop all databases in the config). Without RAILS_ENV or when RAILS_ENV is development, it defaults to dropping the development and test databases" fullCommand="db:drop" id="drop" />
-              <RakeTaskImpl id="environment">
-                <subtasks>
-                  <RakeTaskImpl description="Set the environment value for the database" fullCommand="db:environment:set" id="set" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl id="fixtures">
-                <subtasks>
-                  <RakeTaskImpl description="Loads fixtures into the current environment's database" fullCommand="db:fixtures:load" id="load" />
-                  <RakeTaskImpl description="" fullCommand="db:fixtures:identify" id="identify" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Migrate the database (options: VERSION=x, VERBOSE=false, SCOPE=blog)" fullCommand="db:migrate" id="migrate" />
-              <RakeTaskImpl id="migrate">
-                <subtasks>
-                  <RakeTaskImpl description="Display status of migrations" fullCommand="db:migrate:status" id="status" />
-                  <RakeTaskImpl description="" fullCommand="db:migrate:down" id="down" />
-                  <RakeTaskImpl description="" fullCommand="db:migrate:redo" id="redo" />
-                  <RakeTaskImpl description="" fullCommand="db:migrate:reset" id="reset" />
-                  <RakeTaskImpl description="" fullCommand="db:migrate:up" id="up" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Runs setup if database does not exist, or runs migrations if it does" fullCommand="db:prepare" id="prepare" />
-              <RakeTaskImpl description="Rolls the schema back to the previous version (specify steps w/ STEP=n)" fullCommand="db:rollback" id="rollback" />
-              <RakeTaskImpl id="schema">
-                <subtasks>
-                  <RakeTaskImpl id="cache">
-                    <subtasks>
-                      <RakeTaskImpl description="Clears a db/schema_cache.yml file" fullCommand="db:schema:cache:clear" id="clear" />
-                      <RakeTaskImpl description="Creates a db/schema_cache.yml file" fullCommand="db:schema:cache:dump" id="dump" />
-                    </subtasks>
-                  </RakeTaskImpl>
-                  <RakeTaskImpl description="Creates a db/schema.rb file that is portable against any DB supported by Active Record" fullCommand="db:schema:dump" id="dump" />
-                  <RakeTaskImpl description="Loads a schema.rb file into the database" fullCommand="db:schema:load" id="load" />
-                  <RakeTaskImpl description="" fullCommand="db:schema:load_if_ruby" id="load_if_ruby" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Loads the seed data from db/seeds.rb" fullCommand="db:seed" id="seed" />
-              <RakeTaskImpl id="seed">
-                <subtasks>
-                  <RakeTaskImpl description="Truncates tables of each database for current environment and loads the seeds" fullCommand="db:seed:replant" id="replant" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Creates the database, loads the schema, and initializes with the seed data (use db:reset to also drop the database first)" fullCommand="db:setup" id="setup" />
-              <RakeTaskImpl id="structure">
-                <subtasks>
-                  <RakeTaskImpl description="Dumps the database structure to db/structure.sql" fullCommand="db:structure:dump" id="dump" />
-                  <RakeTaskImpl description="Recreates the databases from the structure.sql file" fullCommand="db:structure:load" id="load" />
-                  <RakeTaskImpl description="" fullCommand="db:structure:load_if_sql" id="load_if_sql" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Retrieves the current schema version number" fullCommand="db:version" id="version" />
-              <RakeTaskImpl description="" fullCommand="db:_dump" id="_dump" />
-              <RakeTaskImpl description="" fullCommand="db:abort_if_pending_migrations" id="abort_if_pending_migrations" />
-              <RakeTaskImpl description="" fullCommand="db:charset" id="charset" />
-              <RakeTaskImpl description="" fullCommand="db:check_protected_environments" id="check_protected_environments" />
-              <RakeTaskImpl description="" fullCommand="db:collation" id="collation" />
-              <RakeTaskImpl id="create">
-                <subtasks>
-                  <RakeTaskImpl description="" fullCommand="db:create:all" id="all" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl id="drop">
-                <subtasks>
-                  <RakeTaskImpl description="" fullCommand="db:drop:_unsafe" id="_unsafe" />
-                  <RakeTaskImpl description="" fullCommand="db:drop:all" id="all" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="" fullCommand="db:forward" id="forward" />
-              <RakeTaskImpl description="" fullCommand="db:load_config" id="load_config" />
-              <RakeTaskImpl description="" fullCommand="db:purge" id="purge" />
-              <RakeTaskImpl id="purge">
-                <subtasks>
-                  <RakeTaskImpl description="" fullCommand="db:purge:all" id="all" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="" fullCommand="db:reset" id="reset" />
-              <RakeTaskImpl id="test">
-                <subtasks>
-                  <RakeTaskImpl description="" fullCommand="db:test:load" id="load" />
-                  <RakeTaskImpl description="" fullCommand="db:test:load_schema" id="load_schema" />
-                  <RakeTaskImpl description="" fullCommand="db:test:load_structure" id="load_structure" />
-                  <RakeTaskImpl description="" fullCommand="db:test:prepare" id="prepare" />
-                  <RakeTaskImpl description="" fullCommand="db:test:purge" id="purge" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="" fullCommand="db:truncate_all" id="truncate_all" />
-            </subtasks>
-          </RakeTaskImpl>
-          <RakeTaskImpl description="Lists all available tasks in Webpacker" fullCommand="webpacker" id="webpacker" />
-          <RakeTaskImpl id="webpacker">
-            <subtasks>
-              <RakeTaskImpl description="Verifies that webpack &amp; webpack-dev-server are present" fullCommand="webpacker:check_binstubs" id="check_binstubs" />
-              <RakeTaskImpl description="Verifies if Node.js is installed" fullCommand="webpacker:check_node" id="check_node" />
-              <RakeTaskImpl description="Verifies if Yarn is installed" fullCommand="webpacker:check_yarn" id="check_yarn" />
-              <RakeTaskImpl description="Remove the webpack compiled output directory" fullCommand="webpacker:clobber" id="clobber" />
-              <RakeTaskImpl description="Compile JavaScript packs using webpack for production with digests" fullCommand="webpacker:compile" id="compile" />
-              <RakeTaskImpl description="Install Webpacker in this application" fullCommand="webpacker:install" id="install" />
-              <RakeTaskImpl id="install">
-                <subtasks>
-                  <RakeTaskImpl description="Install everything needed for Angular" fullCommand="webpacker:install:angular" id="angular" />
-                  <RakeTaskImpl description="Install everything needed for Coffee" fullCommand="webpacker:install:coffee" id="coffee" />
-                  <RakeTaskImpl description="Install everything needed for Elm" fullCommand="webpacker:install:elm" id="elm" />
-                  <RakeTaskImpl description="Install everything needed for Erb" fullCommand="webpacker:install:erb" id="erb" />
-                  <RakeTaskImpl description="Install everything needed for React" fullCommand="webpacker:install:react" id="react" />
-                  <RakeTaskImpl description="Install everything needed for Vue" fullCommand="webpacker:install:vue" id="vue" />
-                </subtasks>
-              </RakeTaskImpl>
-              <RakeTaskImpl description="Verifies if Webpacker is installed" fullCommand="webpacker:verify_install" id="verify_install" />
-              <RakeTaskImpl description="Support for older Rails versions" fullCommand="webpacker:yarn_install" id="yarn_install" />
-            </subtasks>
-          </RakeTaskImpl>
-          <RakeTaskImpl id="assets">
-            <subtasks>
-              <RakeTaskImpl description="" fullCommand="assets:precompile" id="precompile" />
-            </subtasks>
-          </RakeTaskImpl>
-          <RakeTaskImpl description="" fullCommand="environment" id="environment" />
-          <RakeTaskImpl id="railties">
-            <subtasks>
-              <RakeTaskImpl id="install">
-                <subtasks>
-                  <RakeTaskImpl description="" fullCommand="railties:install:migrations" id="migrations" />
-                </subtasks>
-              </RakeTaskImpl>
-            </subtasks>
-          </RakeTaskImpl>
-        </subtasks>
-      </RakeTaskImpl>
+      <RakeTaskImpl id="rake" />
     </option>
   </component>
 </module>

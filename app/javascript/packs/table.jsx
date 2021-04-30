@@ -136,7 +136,8 @@ function Player(props) {
 }
 
 function GameLog(props) {
-    const logEntries = props.log.reverse().map( (e, i) =>
+    const logs = props.log.slice(0).reverse();
+    const logEntries = logs.map( (e, i) =>
         <LogEntry entry={e} key={i}/>
     );
     return(

@@ -2,15 +2,19 @@
 
 ## Running
 ```sh
-AWS_REGION=us-west-1  bundle exec jets server
+chruby 2.5
+AWS_REGION=us-west-2  bundle exec jets server
 bin/webpack-dev-server
 ```
 
 ## Deploy
 To deploy need to be using us-west-1 as region
-
-* jets webpacker:compile 
-* AWS_REGION=us-west-1 jets deploy
+May need also use ruby 2.5.
+```
+chruby 2.5
+bundle exec jets webpacker:compile 
+AWS_REGION=us-west-2 bundle exec jets deploy
+```
 
 ## Add JS Packages
 yarn add <package>  
@@ -29,6 +33,11 @@ x Wilds
 * Some animation for CPU Players playing?
 * Game log over -> highlight the space where the player played.
 * CPU Player defensive calculation
+
+x On lambda, cant switch teams
+* Wild card symbols
+* End game on draw
+* Make cpu players take a few seconds to play.
 
 
 
