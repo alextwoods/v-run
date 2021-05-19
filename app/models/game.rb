@@ -2,11 +2,24 @@ require 'set'
 
 class Game < ApplicationItem
   table_name :chaingame
-  column :id, :data, :updated_at
+  column :id, :data, :updated_at, :room, :ttl
   #   nplayers  2  3  4  5  6  7  8  9  10 11 12
   HAND_CARDS = [7, 6, 6, 6, 5, 5, 4, 4, 3, 3, 3]
 
+  TTL_30_DAYS = 3600 * 24 * 30
+
   CPU_NAMES = %w[bender data chip hal marvin cloud hal bin nibble]
+
+  # Return a list of Games who match the given room
+  def self.where_room(room)
+    self.query(
+      index_name: 'room-ttl-index',
+      expression_attribute_names: { "#room_id" => "room" },
+      expression_attribute_values: { ":room_value" => room },
+      key_condition_expression: "#room_id = :room_value",
+      scan_index_forward: false, # sort by most recent first
+      )
+  end
 
   def add_player(player)
     validate_data
@@ -125,7 +138,11 @@ class Game < ApplicationItem
       board.board_loc(c).each do |p_bI|
         if board.tokens[p_bI].nil?
           r, c = board.bI_to_rc(p_bI)
+          # offensive
           scores << {hI: hI, cI: cI, bI: p_bI, row: r, col: c, score: board.score_move(r, c, team, settings['sequence_length'])}
+
+          # defensive - for each other team, capture the value of the score IF the card was played for them
+          other_teams = data["teams"]
         end
       end
     end
@@ -180,10 +197,16 @@ class Game < ApplicationItem
   def next_turn(player)
     # check for wins
     get_board.sequences.each_pair do |team, sequences|
-      if sequences.size >= settings['sequences_to_win']
+      if sequences.size >= settings['sequences_to_win'].to_i
         table_state['state'] = 'GAME_OVER'
         table_state['winner'] = team
       end
+    end
+
+    #check for draw state
+    if get_board.tokens.select { |t| t.nil? }.size <= 4
+      table_state['state'] = 'GAME_OVER'
+      table_state['winner'] = 'NONE'
     end
 
     return unless table_state['state'] == 'WAITING_TO_PLAY'
@@ -243,6 +266,10 @@ class Game < ApplicationItem
     @board ||= Board.from_h(table_state['board'])
   end
 
+  def next_player_cpu?
+    table_state['state'] == 'WAITING_TO_PLAY' && data["cpu_players"].include?(active_player)
+  end
+
   private
 
   # raise an exception if data is missing key fields
@@ -259,12 +286,10 @@ class Game < ApplicationItem
     end
   end
 
-  def next_player_cpu?
-    data["cpu_players"].include?(active_player)
-  end
-
-  def self.create_fresh
+  def self.create_fresh(room: nil)
     game = Game.new
+    game.room = room
+    game.ttl = Time.now.to_i + TTL_30_DAYS
     game.data = {
       'players' => [],
       'teams' => {
@@ -284,7 +309,7 @@ class Game < ApplicationItem
         'sequence_length' => 5,
         'board' => 'spiral',
         'custom_hand_cards' => nil,
-        'cpu_wait_time' => ENV['ENV_REMOTE'] ? 2.5 : nil # ENV_REMOTE is defined in .env.development.remote
+        'cpu_wait_time' => ENV['ENV_REMOTE'] ? 2.0 : nil # ENV_REMOTE is defined in .env.development.remote
       }
     }
     game

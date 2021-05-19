@@ -7,7 +7,8 @@ class GamesController < ApplicationController
   rescue_from StandardError, with: :error_handler
 
   def create
-    game = Game.create_fresh
+    puts "Creating game with: #{room_params.to_h}"
+    game = Game.create_fresh(room: room_params.to_h["room"])
     game.replace
     redirect_to add_stage_name(play_game_path(game.id))
   end
@@ -94,7 +95,7 @@ class GamesController < ApplicationController
 
     # the order of game.replace is sensitive (because in local, perform_later runs in the same thread
     # here, save it first, then run the cpu
-    if @game.settings['cpu_wait_time'] && @game.settings['cpu_wait_time'] > 0
+    if @game.settings['cpu_wait_time'] && @game.settings['cpu_wait_time'] > 0.5
       @game.replace
       if @game.next_player_cpu?
         PlayCpuJob.perform_later(:play, {game_id: @game.id, sleep: @game.settings['cpu_wait_time'].to_i})
@@ -129,6 +130,10 @@ class GamesController < ApplicationController
 
   def set_game
     @game = Game.find(params[:game_id])
+  end
+
+  def room_params
+    params.require(:game).permit(:room)
   end
 
   def player_params

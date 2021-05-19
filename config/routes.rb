@@ -1,5 +1,5 @@
 Jets.application.routes.draw do
-  root "games#index"
+  root "rooms#index"
 
   resources :games, except: [:edit, :update] do
     get "play", on: :member
@@ -12,6 +12,14 @@ Jets.application.routes.draw do
     post "newgame", on: :member
 
     post "play", on: :member
+  end
+
+  # unclear why the below doesn't define this
+  get '/rooms/new', to: 'rooms#new'
+  post "/rooms/join", to: 'rooms#join'
+  get '/rooms/leave', to: 'rooms#leave'
+
+  resources :rooms, except: [:edit, :update, :destroy] do
   end
 
 

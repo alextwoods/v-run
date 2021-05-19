@@ -4,6 +4,7 @@ gem "jets"
 gem "webpacker", git: "https://github.com/tongueroo/webpacker.git", branch: "jets"
 
 gem "dynomite"
+gem "bcrypt"
 
 # development and test groups are not bundled as part of the deployment
 group :development, :test do

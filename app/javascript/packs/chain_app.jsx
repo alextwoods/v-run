@@ -89,6 +89,7 @@ class ChainGame extends React.Component {
                 type: 'GET',
                 success: (response) => {
                     const game = response.data;
+                    game.room = response.room;
                     const lastServerAction = Date.parse(response.updated_at);
                     let dt = ((new Date()) - lastServerAction) / 1000.0 / 60.0 ;
                     if (dt > 10) {

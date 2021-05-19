@@ -8,7 +8,6 @@ import { ListGroup, ListGroupItem } from 'reactstrap';
 export default class Lobby extends React.Component {
 
     render() {
-        console.log(this.props.game.players.length);
         return (
             <Container>
                 <Row className="justify-content-center">
@@ -47,6 +46,9 @@ export default class Lobby extends React.Component {
                         <h4>
                             Invite Others
                         </h4>
+                        { this.props.game.room && <p>
+                            This Game is part of the {this.props.game.room} game room, anyone with access to the room can easily join from there.
+                        </p>}
                         <p>
                             To invite players to join the game, simply send them the url of this page:
                         </p>

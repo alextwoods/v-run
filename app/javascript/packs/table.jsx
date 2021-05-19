@@ -102,7 +102,7 @@ export default class Table extends React.Component {
                 {this.props.game.table_state.state == 'GAME_OVER' &&
                 <div className="game-over-overlay">
                     <div className="d-flex justify-content-center winner-banner">
-                        {this.props.game.table_state.winner} WINS!
+                        {this.props.game.table_state.winne == 'DRAW' ? 'DRAW' : this.props.game.table_state.winner + ' WINS!'}
                     </div>
                 </div>
                 }
